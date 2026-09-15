@@ -1,6 +1,6 @@
 export const getUsers = async (req, res) => {
     try {
-        res.json({ message: 'Listado de usuarios' });
+        res.json({ status: 'success', payload: [] });
     } catch (error) {
         res.status(500).json({ error: 'Error al obtener usuarios' });
     }
