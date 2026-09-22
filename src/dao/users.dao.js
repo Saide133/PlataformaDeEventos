@@ -20,6 +20,11 @@ export const createUser = async (userData) => {
         });
         return newUser;
     } catch (error) {
+        if (error.code === 11000) {
+            const duplicateError = new Error('El correo electrónico ya está en uso');
+            duplicateError.statusCode = 409;
+            throw duplicateError;
+        }
         throw new Error('Error al crear usuario');
     }
 }
