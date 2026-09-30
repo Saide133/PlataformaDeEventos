@@ -2,7 +2,7 @@ import User from '../models/User.js';
 
 export const findByEmail = async (email) => {
     try {
-        const user = await User.findOne({ email});
+        const user = await User.findOne({ email }).select('+password');
         return user;
     } catch (error) {
         throw new Error('Error al buscar usuario por email');

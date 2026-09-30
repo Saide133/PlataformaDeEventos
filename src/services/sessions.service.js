@@ -1,5 +1,6 @@
 import { getUserByEmail, createUser } from '../repositories/users.repository.js';
-import { createHash } from '../utils/hash.js';
+import { createHash, isValidPassword } from '../utils/hash.js';
+import { generateToken } from '../utils/jwt.js';
 
 export const registerUser = async ({ first_name, last_name, email, password }) => {
     if (!first_name || !last_name || !email || !password){
@@ -44,4 +45,45 @@ export const registerUser = async ({ first_name, last_name, email, password }) =
     const newUser = await createUser(userData);
 
     return newUser;
+};
+
+export const loginUser = async ({email, password}) => {
+    if(!email || !password){
+        const error = new Error('Todos los campos son obligatorios');
+        error.statusCode = 400;
+        throw error;
+    };
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)){
+        const error = new Error('Credenciales inválidas');
+        error.statusCode = 401;
+        throw error; 
+    };
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const userExists = await getUserByEmail(normalizedEmail);
+
+    if(!userExists){
+        const error = new Error('Credenciales inválidas');
+        error.statusCode = 401;
+        throw error;
+    };
+
+    const validPassword = await isValidPassword(password, userExists.password);
+
+    if(!validPassword){
+        const error = new Error('Credenciales inválidas');
+        error.statusCode = 401;
+        throw error;
+    };
+
+    const tokenUser = {
+        id: userExists._id,
+        email: userExists.email,
+        role: userExists.role
+    };
+
+    return await generateToken(tokenUser);
 };
