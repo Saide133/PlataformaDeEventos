@@ -2,88 +2,88 @@ import { getUserByEmail, createUser } from '../repositories/users.repository.js'
 import { createHash, isValidPassword } from '../utils/hash.js';
 import { generateToken } from '../utils/jwt.js';
 
-export const registerUser = async ({ first_name, last_name, email, password }) => {
-    if (!first_name || !last_name || !email || !password){
-        const error = new Error('Todos los campos son obligatorios');
-        error.statusCode = 400;
-        throw error;
-    };
+// export const registerUser = async ({ first_name, last_name, email, password }) => {
+//     if (!first_name || !last_name || !email || !password){
+//         const error = new Error('Todos los campos son obligatorios');
+//         error.statusCode = 400;
+//         throw error;
+//     };
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)){
-        const error = new Error('El email no es válido');
-        error.statusCode = 400;
-        throw error; 
-    };
+//     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+//     if (!emailRegex.test(email)){
+//         const error = new Error('El email no es válido');
+//         error.statusCode = 400;
+//         throw error; 
+//     };
 
-    if (password.length < 8){
-        const error = new Error('La contraseña debe tener al menos 8 caracteres');
-        error.statusCode = 400;
-        throw error;
-    };
+//     if (password.length < 8){
+//         const error = new Error('La contraseña debe tener al menos 8 caracteres');
+//         error.statusCode = 400;
+//         throw error;
+//     };
 
-    const normalizedEmail = email.toLowerCase().trim();
+//     const normalizedEmail = email.toLowerCase().trim();
 
-    const userExists = await getUserByEmail(normalizedEmail);
+//     const userExists = await getUserByEmail(normalizedEmail);
 
-    if (userExists){
-        const error = new Error('Ya existe un usuario registrado con ese email');
-        error.statusCode = 409;
-        throw error;
-    };
+//     if (userExists){
+//         const error = new Error('Ya existe un usuario registrado con ese email');
+//         error.statusCode = 409;
+//         throw error;
+//     };
     
-    const hashedPassword = await createHash(password);
+//     const hashedPassword = await createHash(password);
 
-    const userData = {
-        first_name,
-        last_name,
-        email: normalizedEmail,
-        password: hashedPassword,
-        role: 'user'
-    };
+//     const userData = {
+//         first_name,
+//         last_name,
+//         email: normalizedEmail,
+//         password: hashedPassword,
+//         role: 'user'
+//     };
 
-    const newUser = await createUser(userData);
+//     const newUser = await createUser(userData);
 
-    return newUser;
-};
+//     return newUser;
+// };
 
-export const loginUser = async ({email, password}) => {
-    if(!email || !password){
-        const error = new Error('Todos los campos son obligatorios');
-        error.statusCode = 400;
-        throw error;
-    };
+// export const loginUser = async ({email, password}) => {
+//     if(!email || !password){
+//         const error = new Error('Todos los campos son obligatorios');
+//         error.statusCode = 400;
+//         throw error;
+//     };
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)){
-        const error = new Error('Credenciales inválidas');
-        error.statusCode = 401;
-        throw error; 
-    };
+//     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+//     if (!emailRegex.test(email)){
+//         const error = new Error('Credenciales inválidas');
+//         error.statusCode = 401;
+//         throw error; 
+//     };
 
-    const normalizedEmail = email.toLowerCase().trim();
+//     const normalizedEmail = email.toLowerCase().trim();
 
-    const userExists = await getUserByEmail(normalizedEmail);
+//     const userExists = await getUserByEmail(normalizedEmail);
 
-    if(!userExists){
-        const error = new Error('Credenciales inválidas');
-        error.statusCode = 401;
-        throw error;
-    };
+//     if(!userExists){
+//         const error = new Error('Credenciales inválidas');
+//         error.statusCode = 401;
+//         throw error;
+//     };
 
-    const validPassword = await isValidPassword(password, userExists.password);
+//     const validPassword = await isValidPassword(password, userExists.password);
 
-    if(!validPassword){
-        const error = new Error('Credenciales inválidas');
-        error.statusCode = 401;
-        throw error;
-    };
+//     if(!validPassword){
+//         const error = new Error('Credenciales inválidas');
+//         error.statusCode = 401;
+//         throw error;
+//     };
 
-    const tokenUser = {
-        id: userExists._id,
-        email: userExists.email,
-        role: userExists.role
-    };
+//     const tokenUser = {
+//         id: userExists._id,
+//         email: userExists.email,
+//         role: userExists.role
+//     };
 
-    return await generateToken(tokenUser);
-};
+//     return await generateToken(tokenUser);
+// };
