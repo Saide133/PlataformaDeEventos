@@ -1,13 +1,42 @@
 import { Router } from 'express';
 import passport from 'passport';
 import { registerController, loginController, currentController, logoutController } from '../controllers/sessions.controller.js';
-import { authMiddleware } from '../middlewares/auth.middleware.js';
 
 const router = Router(); 
 
-router.post('/register', passport.authenticate('register', { session: false }), registerController);
-router.post('/login', passport.authenticate('login', { session: false }), loginController);
-router.get('/current', authMiddleware, currentController);
+router.post('/register', (req, res, next) => {
+    passport.authenticate('register', { session: false }, (err, user, info) => {
+        if (err) return next(err);
+        if (!user) {
+            return res.status(400).json({ status: 'error', message: info?.message || 'No se pudo registrar el usuario' });
+        }
+        req.user = user;
+        registerController(req, res);
+    })(req, res, next);
+});
+
+router.post('/login', (req, res, next) => {
+    passport.authenticate('login', { session: false }, (err, user, info) => {
+        if (err) return next(err);
+        if (!user) {
+            return res.status(401).json({ status: 'error', message: info?.message || 'Credenciales inválidas' });
+        }
+        req.user = user;
+        loginController(req, res);
+    })(req, res, next);
+});
+
+router.get('/current', (req, res, next) => {
+    passport.authenticate('current', { session: false }, (err, user, info) => {
+        if (err) return next(err);
+        if (!user) {
+            return res.status(401).json({ status: 'error', message: 'No autenticado' });
+        }
+        req.user = user;
+        currentController(req, res);
+    })(req, res, next);
+});
+
 router.post('/logout', logoutController);
     
 

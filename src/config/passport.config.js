@@ -1,6 +1,7 @@
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
-import { getUserByEmail, createUser } from '../repositories/users.repository.js';
+import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
+import { getUserByEmail, createUser, getUserById } from '../repositories/users.repository.js';
 import { createHash, isValidPassword } from '../utils/hash.js';
 
 passport.use( 
@@ -87,6 +88,35 @@ passport.use(
                 return done(null, userExists);
 
             } catch (error){
+                return done(error);
+            };
+        }
+    )
+);
+
+const cookieExtractor =(req) => {
+    let token = null;
+    if (req && req.cookies) {
+        token = req.cookies.currentUser;
+    };
+    return token;
+};
+
+passport.use(
+    'current',
+    new JwtStrategy(
+        { jwtFromRequest: cookieExtractor, secretOrKey: process.env.JWT_SECRET },
+        async (jwtPayload, done) => {
+            try {
+                const user = await getUserById(jwtPayload.id);
+
+                if (!user) {
+                    return done(null, false);
+                };
+
+                return done(null, user);
+                
+            } catch (error) {
                 return done(error);
             };
         }

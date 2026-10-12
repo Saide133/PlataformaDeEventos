@@ -1,4 +1,4 @@
-import { findByEmail, createUser as createUserInDb } from '../dao/users.dao.js';
+import { findByEmail, createUser as createUserInDb, findById } from '../dao/users.dao.js';
 
 export const getUserByEmail = async (email) => {
     return await findByEmail(email);
@@ -6,4 +6,8 @@ export const getUserByEmail = async (email) => {
 
 export const createUser = async (userData) => {
     return await createUserInDb(userData);
+};
+
+export const getUserById = async (_id) => {
+    return await findById(_id);
 };

@@ -6,8 +6,8 @@ export const findByEmail = async (email) => {
         return user;
     } catch (error) {
         throw new Error('Error al buscar usuario por email');
-    }
-}
+    };
+};
 
 export const createUser = async (userData) => {
     try {
@@ -26,5 +26,14 @@ export const createUser = async (userData) => {
             throw duplicateError;
         }
         throw new Error('Error al crear usuario');
+    };
+};
+
+export const findById = async (_id) => {
+    try{
+        const user = await User.findById(_id);
+        return user;
+    }catch (error){
+        throw new Error('Usuario no encontrado')
     }
-}
+};

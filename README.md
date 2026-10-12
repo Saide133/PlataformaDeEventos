@@ -2,7 +2,7 @@
 
 API REST para la gestión de eventos e inscripciones/tickets, desarrollada como proyecto final del curso Backend II de Coderhouse. Permite administrar usuarios, eventos, categorías e inscripciones, con roles diferenciados (admin, organizador y usuario).
 
-Este repositorio corresponde a la Pre-entrega 3: autenticación con JWT y cookies, construida sobre la base de las entregas anteriores (arquitectura en capas y registro seguro de usuarios). Implementa el flujo completo de sesión: login con generación de JWT, cookie de autenticación HTTP Only, ruta protegida para consultar el usuario autenticado, y logout.
+Este repositorio corresponde a la Pre-entrega 4: refactor de la autenticación para centralizar la lógica de registro, login y usuario actual en estrategias de Passport.js, construida sobre la base de las entregas anteriores. El contrato externo de la API (rutas y respuestas) no cambia respecto de la Pre-entrega 3 — lo que cambia es la organización interna.
 
 ## Tecnologías
 
@@ -13,6 +13,7 @@ Este repositorio corresponde a la Pre-entrega 3: autenticación con JWT y cookie
 - dotenv
 - bcrypt
 - jsonwebtoken
+- Passport.js (passport, passport-local, passport-jwt)
 - cookie-parser
 - Nodemon (entorno de desarrollo)
 
@@ -195,7 +196,7 @@ El JWT se firma con `JWT_SECRET` y expira según `JWT_EXPIRES_IN`. Su payload co
 
 Ruta protegida. Devuelve los datos del usuario autenticado a partir de la cookie `currentUser`, sin necesidad de volver a enviar email y contraseña.
 
-Pasa por `authMiddleware`, que lee la cookie, verifica el JWT (firma y expiración) y guarda el resultado en `req.user`.
+Pasa por la estrategia `'current'` de Passport (`passport-jwt`), que extrae el token de la cookie `currentUser` mediante un extractor personalizado, verifica su firma y vigencia con `JWT_SECRET`, busca al usuario en la base con el `id` del payload, y lo deja disponible en `req.user`.
 
 **Respuesta exitosa (`200`)** — con la cookie válida:
 
@@ -233,6 +234,16 @@ Elimina la cookie `currentUser`, cerrando la sesión.
 ```
 
 Después del logout, una nueva petición a `GET /api/sessions/current` responde `401`.
+
+## Estrategias de Passport y preparación para providers externos
+
+Las tres estrategias de autenticación (`register`, `login`, `current`) están centralizadas en `src/config/passport.config.js`, separadas de `app.js` (que solo llama a `passport.initialize()`). Cada estrategia encapsula su propia lógica de validación:
+
+- `register` (passport-local): valida los campos, normaliza el email, verifica unicidad, hashea la contraseña con bcrypt y asigna el rol `user` por defecto.
+- `login` (passport-local): valida credenciales contra la base de datos. El JWT se genera y la cookie se setea en el controller, no en la estrategia.
+- `current` (passport-jwt): extrae y verifica el JWT desde la cookie, y recupera al usuario desde la base de datos.
+
+Esta estructura deja el proyecto preparado para agregar nuevas estrategias (por ejemplo `passport-google-oauth20` o `passport-github2`) sumando un nuevo `passport.use(...)` en `passport.config.js`, sin necesidad de modificar `app.js` ni las rutas existentes.
 
 ## Cómo probarlo
 

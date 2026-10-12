@@ -39,7 +39,11 @@ export const loginController = (req, res) => {
 export const currentController = (req, res) => {
     res.status(200).json({
         status: 'success',
-        payload: req.user
+        payload: {
+            id: req.user._id,
+            email: req.user.email,
+            role: req.user.role
+        }
     });
 };
 
