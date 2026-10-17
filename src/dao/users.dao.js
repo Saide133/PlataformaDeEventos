@@ -37,3 +37,12 @@ export const findById = async (_id) => {
         throw new Error('Usuario no encontrado')
     }
 };
+
+export const findAllUsers = async () => {
+    try{
+        const users = await User.find();
+        return users;
+    }catch (error){
+        throw new Error('Error al obtener usuarios')
+    }
+};

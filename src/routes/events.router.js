@@ -1,9 +1,12 @@
 import { Router } from 'express';
-import { getEvents, createEvent } from '../controllers/events.controller.js';
+import { getEvents, createEvent, updateEvent } from '../controllers/events.controller.js';
+import { authMiddleware } from '../middlewares/auth.middleware.js';
+import { authorizeRoles, authorizeEventOwner } from '../middlewares/authorize.middleware.js';
 
 const router = Router();
 
 router.get('/', getEvents);
-router.post('/', createEvent);
+router.post('/', authMiddleware, authorizeRoles('organizer', 'admin'), createEvent);
+router.put('/:id', authMiddleware, authorizeRoles('organizer', 'admin'), authorizeEventOwner, updateEvent);
 
 export default router;
