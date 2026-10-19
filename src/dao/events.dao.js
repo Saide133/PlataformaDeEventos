@@ -7,16 +7,18 @@ export const createEvent = async (eventData) => {
     } catch (error) {
         throw new Error('Error al crear evento');
     }
-}
+};
 
-export const findAll = async () => {
+export const findAll = async (filter, options) => {
     try {
-        const events = await Event.find();
+        const { skip, limit, sort } = options;
+        const events = await Event.find(filter).populate('category').populate('organizer', 'first_name last_name').sort(sort).skip(skip).limit(limit);
+
         return events;
     } catch (error) {
         throw new Error('Error al obtener eventos');
     }
-}
+};
 
 export const findById = async (_id) => {
     try {
@@ -25,7 +27,7 @@ export const findById = async (_id) => {
     } catch (error) {
         throw new Error('Evento no encontrado');
     }
-}
+};
 
 export const updateEvent = async (_id, updateData) => {
     try {
@@ -34,4 +36,13 @@ export const updateEvent = async (_id, updateData) => {
     } catch (error) {
         throw new Error('Error al actualizar evento');
     }
-}
+};
+
+export const countEvents = async (filter) => {
+    try {
+        const totalEvents = await Event.countDocuments(filter);
+        return totalEvents;
+    } catch (error) {
+        throw new Error('Error al obtener eventos');
+    }
+};
