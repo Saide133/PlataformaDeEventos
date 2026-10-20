@@ -1,4 +1,5 @@
-import { createEvent as createEventInDb, getAllEvents, updateEvent as updateEventInDb, countEvents } from '../repositories/events.repository.js';
+import { getAllEvents, countEvents, getEventById as getEventByIdFromRepo } from '../repositories/events.repository.js';
+import { createEventService, updateEventService, updateEventStatusService } from '../services/events.service.js';
 
 export const getEvents = async (req, res) => {
     try {
@@ -6,8 +7,8 @@ export const getEvents = async (req, res) => {
             category,
             status,
             location,
-            fromDate,
-            toDate,
+            dateFrom,
+            dateTo,
             search,
             page = 1,
             limit = 10,
@@ -31,15 +32,15 @@ export const getEvents = async (req, res) => {
             };
         };
 
-        if (fromDate || toDate) {
+        if (dateFrom || dateTo) {
             filter.date = {};
 
-            if (fromDate) {
-                filter.date.$gte = new Date(fromDate)
+            if (dateFrom) {
+                filter.date.$gte = new Date(dateFrom)
             };
 
-            if (toDate) {
-                filter.date.$lte = new Date(toDate)
+            if (dateTo) {
+                filter.date.$lte = new Date(dateTo)
             };
         };
 
@@ -90,10 +91,6 @@ export const createEvent = async (req, res) => {
     try {
         const { title, description, category, date, location, capacity, price, status } = req.body;
 
-        if (!title || !description || !category || !date || !location || !capacity) {
-            return res.status(400).json({ status: 'error', message: 'Todos los campos son obligatorios' });
-        }
-
         const eventData = {
             title,
             description,
@@ -106,22 +103,48 @@ export const createEvent = async (req, res) => {
             organizer: req.user._id
         };
 
-        const newEvent = await createEventInDb(eventData);
+        const newEvent = await createEventService(eventData);
 
         res.status(201).json({ status: 'success', payload: newEvent });
     } catch (error) {
-        res.status(500).json({ status: 'error', message: 'Error al crear evento' });
+        res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al crear evento' });
     }
 };
 
 export const updateEvent = async (req, res) => {
     try {
-        const { id } = req.params;
         const updateData = req.body;
-        const updatedEvent = await updateEventInDb(id, updateData);
+        const updatedEvent = await updateEventService(req.event, updateData);
 
         res.json({ status: 'success', payload: updatedEvent});
     } catch (error) {
-        res.status(500).json({ status: 'error', message:'Error al actualizar evento'});
+        res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al actualizar evento'});
+    }
+};
+
+export const getEventById = async(req, res) =>{
+    try {
+        const { id } = req.params;
+        const event = await getEventByIdFromRepo(id);
+
+        if (!event) {
+            return res.status(404).json({ status: 'error', message: 'No se encontró el evento'});   
+        };
+
+        res.json({ status: 'success', payload: event });
+    } catch (error){
+        res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al obtener el evento'});
+    }
+
+};
+
+export const updateEventStatus = async (req, res) => {
+    try {
+        const { status } = req.body;
+        const updatedEvent = await updateEventStatusService(req.event, status);
+
+        res.json({ status: 'success', payload: updatedEvent });
+    } catch (error) {
+        res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al actualizar el estado del evento' });
     }
 };
