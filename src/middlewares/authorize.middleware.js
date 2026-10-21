@@ -18,14 +18,15 @@ export const authorizeRoles = (...allowedRoles) => {
 
         next();
     }
-}
+};
 
-export const authorizeEventOwner = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const event = await getEventById(id);
+export const authorizeEventOwner = (paramName = 'id') => {
+    return async (req, res, next) => {
+        try {
+            const eventId = req.params[paramName];
+            const event = await getEventById(eventId);
 
-        if (!event) {
+            if (!event) {
             return res.status(404).json({ status: 'error', message: 'Evento no encontrado' });
         }
 
@@ -39,7 +40,8 @@ export const authorizeEventOwner = async (req, res, next) => {
         req.event = event;
         next();
 
-    } catch (error) {
-        res.status(500).json({ status: 'error', message: 'Error al validar permisos' });
-    }
+        } catch (error) {
+            res.status(500).json({ status: 'error', message: 'Error al validar permisos' });
+        }
+    };
 };
