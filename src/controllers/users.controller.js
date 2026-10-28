@@ -1,28 +1,24 @@
-import { getAllUsers, createUser as createUserInRepo } from '../repositories/users.repository.js';
-import { createHash } from '../utils/hash.js';
+import { CurrentUserDTO } from '../dto/current-user.dto.js';
+import { createUserByAdminService, getAllUsersService } from '../services/users.service.js';
 
 export const getUsers = async (req, res) => {
     try {
-        const users = await getAllUsers();
-        res.json({ status: 'success', payload: users });
+        const users = await getAllUsersService();
+        const usersDTO = users.map(user => new CurrentUserDTO(user));
+
+        res.status(200).json({ status: 'success', payload: usersDTO });
     } catch (error) {
-        res.status(500).json({ status: 'error', message: 'Error al obtener usuarios' });
+        res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al obtener usuarios' });
     }
 };
 
 export const createUser = async (req, res) => {
     try {
         const { first_name, last_name, email, password, role } = req.body;
+        const newUser = await createUserByAdminService({ first_name, last_name, email, password, role });
+        const userDTO = new CurrentUserDTO(newUser);
 
-        if (!first_name || !last_name || !email || !password || !role) {
-            return res.status(400).json({ status: 'error', message: 'Todos los campos son obligatorios' });
-        }
-
-        const hashedPassword = await createHash(password);
-        const userData = { first_name, last_name, email, password: hashedPassword, role };
-        const newUser = await createUserInRepo(userData);
-
-        res.status(201).json({ status: 'success', payload: newUser });
+        res.status(201).json({ status: 'success', payload: userDTO });
     } catch (error) {
         res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al crear usuario' });
     }

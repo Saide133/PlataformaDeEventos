@@ -1,16 +1,14 @@
 import { generateToken } from "../utils/jwt.js";
+import { CurrentUserDTO } from '../dto/current-user.dto.js';
 
-export const registerController =  (req, res) => {    
+
+export const registerController =  (req, res) => {  
+    const userDTO = new CurrentUserDTO(req.user);
+    
     res.status(201).json({ 
         status: 'success', 
         message: 'Usuario registrado',
-        payload: {
-            id: req.user._id,
-            first_name: req.user.first_name,
-            last_name: req.user.last_name,
-            email: req.user.email,
-            role: req.user.role
-        }
+        payload: userDTO
     });
 };
 
@@ -37,13 +35,11 @@ export const loginController = (req, res) => {
 };
 
 export const currentController = (req, res) => {
+    const userDTO = new CurrentUserDTO(req.user);
+
     res.status(200).json({
         status: 'success',
-        payload: {
-            id: req.user._id,
-            email: req.user.email,
-            role: req.user.role
-        }
+        payload: userDTO
     });
 };
 
