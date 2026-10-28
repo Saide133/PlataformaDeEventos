@@ -1,5 +1,5 @@
-import { getAllEvents, countEvents, getEventById as getEventByIdFromRepo } from '../repositories/events.repository.js';
-import { createEventService, updateEventService, updateEventStatusService } from '../services/events.service.js';
+import { createEventService, updateEventService, updateEventStatusService, getEventsService, getEventByIdService, countEventsService } from '../services/events.service.js';
+import { EventResponseDTO } from '../dto/event-response.dto.js';
 
 export const getEvents = async (req, res) => {
     try {
@@ -67,13 +67,14 @@ export const getEvents = async (req, res) => {
 
         const options = { skip, limit: limitNumber, sort};
 
-        const events = await getAllEvents(filter, options);
+        const events = await getEventsService(filter, options);
+        const eventsDTO = events.map(event => new EventResponseDTO(event));
 
-        const totalEvents = await countEvents(filter);
+        const totalEvents = await countEventsService(filter);
 
         res.json({ 
             status: 'success', 
-            payload: events,
+            payload: eventsDTO,
             pagination: {
                 total: totalEvents,
                 page: pageNumber,
@@ -104,8 +105,9 @@ export const createEvent = async (req, res) => {
         };
 
         const newEvent = await createEventService(eventData);
+        const eventDTO = new EventResponseDTO(newEvent);
 
-        res.status(201).json({ status: 'success', payload: newEvent });
+        res.status(201).json({ status: 'success', payload: eventDTO });
     } catch (error) {
         res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al crear evento' });
     }
@@ -115,8 +117,9 @@ export const updateEvent = async (req, res) => {
     try {
         const updateData = req.body;
         const updatedEvent = await updateEventService(req.event, updateData);
+        const eventDTO = new EventResponseDTO(updatedEvent);
 
-        res.json({ status: 'success', payload: updatedEvent});
+        res.json({ status: 'success', payload: eventDTO});
     } catch (error) {
         res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al actualizar evento'});
     }
@@ -125,13 +128,15 @@ export const updateEvent = async (req, res) => {
 export const getEventById = async(req, res) =>{
     try {
         const { id } = req.params;
-        const event = await getEventByIdFromRepo(id);
+        const event = await getEventByIdService(id);
 
         if (!event) {
             return res.status(404).json({ status: 'error', message: 'No se encontró el evento'});   
         };
 
-        res.json({ status: 'success', payload: event });
+        const eventDTO = new EventResponseDTO(event);
+
+        res.json({ status: 'success', payload: eventDTO });
     } catch (error){
         res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al obtener el evento'});
     }
@@ -142,8 +147,9 @@ export const updateEventStatus = async (req, res) => {
     try {
         const { status } = req.body;
         const updatedEvent = await updateEventStatusService(req.event, status);
+        const eventDTO = new EventResponseDTO(updatedEvent);
 
-        res.json({ status: 'success', payload: updatedEvent });
+        res.json({ status: 'success', payload: eventDTO });
     } catch (error) {
         res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al actualizar el estado del evento' });
     }

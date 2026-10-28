@@ -1,4 +1,6 @@
-import { updateEvent as updateEventInDb, createEvent as createEventInDb } from "../repositories/events.repository.js";
+import { EventRepository } from "../repositories/events.repository.js";
+
+const eventRepository = new EventRepository();
 
 const validateEventDate = (date) => {
     const now = new Date();
@@ -60,7 +62,7 @@ export const createEventService = async (eventData) => {
     validateCapacity(capacity);
     if (price) validatePrice(price);
 
-    return await createEventInDb(eventData);
+    return await eventRepository.createEvent(eventData);
 };
 
 export const updateEventService = async (event, updateData) => {
@@ -80,7 +82,7 @@ export const updateEventService = async (event, updateData) => {
     if (updateData.capacity !== undefined) validateCapacity(updateData.capacity);
     if (updateData.price !== undefined) validatePrice(updateData.price);
 
-    return await updateEventInDb(event._id, updateData);
+    return await eventRepository.updateEvent(event._id, updateData);
 };
 
 const VALID_STATUSES = ['draft', 'published', 'cancelled', 'finished'];
@@ -98,5 +100,17 @@ export const updateEventStatusService = async (event, newStatus) => {
         throw invalidStatusError;
     };
 
-    return await updateEventInDb(event._id, { status: newStatus });
+    return await eventRepository.updateEvent(event._id, { status: newStatus });
+};
+
+export const getEventsService = async (filter, options) => {
+    return eventRepository.getAllEvents(filter, options);    
+};
+
+export const getEventByIdService = async (_id) => {
+    return eventRepository.getEventById(_id);
+};
+
+export const countEventsService = async (filter) => {
+    return eventRepository.countEvents(filter);
 };

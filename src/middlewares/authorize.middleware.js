@@ -1,4 +1,6 @@
-import { getEventById } from '../repositories/events.repository.js';
+import { EventRepository } from '../repositories/events.repository.js';
+
+const eventRepository = new EventRepository();
 
 export const authorizeRoles = (...allowedRoles) => {
     return (req,res, next) => {
@@ -24,7 +26,7 @@ export const authorizeEventOwner = (paramName = 'id') => {
     return async (req, res, next) => {
         try {
             const eventId = req.params[paramName];
-            const event = await getEventById(eventId);
+            const event = await eventRepository.getEventById(eventId);
 
             if (!event) {
             return res.status(404).json({ status: 'error', message: 'Evento no encontrado' });

@@ -1,37 +1,34 @@
-import {
-    createTicket as createTicketInDb, findActiveTicketByUserAndEvent as findActiveTicketByUserAndEventInDb,
-    countReservedQuantityForEvent as countReservedQuantityForEventInDb,
-    findTicketsByEvent as findTicketsByEventInDb,
-    findTicketsByUser as findTicketsByUserInDb,
-    findTicketById as findTicketByIdInDb,
-    cancelTicket as cancelTicketInDb
-} from '../dao/tickets.dao.js';
+import { TicketDAO } from '../dao/tickets.dao.js';
 
+const ticketDAO = new TicketDAO();
 
-export const createTicket = async (ticketData) => {
-    return await createTicketInDb(ticketData);
-};
+export class TicketRepository {
 
-export const findActiveTicketByUserAndEvent = async (userId, eventId) => {
-    return await findActiveTicketByUserAndEventInDb(userId, eventId);
-};
+    async createTicket(ticketData) {
+        return await ticketDAO.createTicket(ticketData);
+    };
 
-export const countReservedQuantityForEvent = async (eventId) => {
-    return await countReservedQuantityForEventInDb(eventId);
-};
+    async findActiveTicketByUserAndEvent(userId, eventId) {
+        return await ticketDAO.findActiveTicketByUserAndEvent(userId, eventId);
+    };
 
-export const findTicketsByEvent = async (eventId) => {
-    return await findTicketsByEventInDb(eventId);
-};
+    async countReservedQuantityForEvent(eventId) {
+        return await ticketDAO.countReservedQuantityForEvent(eventId);
+    };
 
-export const findTicketsByUser = async (userId) => {
-    return await findTicketsByUserInDb(userId);
-};
+    async findTicketsByUser(userId) {
+        return await ticketDAO.findTicketsByUser(userId);
+    };
 
-export const findTicketById = async (ticketId) => {
-    return await findTicketByIdInDb(ticketId);
-};
+    async findTicketsByEvent(eventId) {
+        return await ticketDAO.findTicketsByEvent(eventId);
+    };
 
-export const cancelTicket = async (ticketId) => {
-    return await cancelTicketInDb(ticketId);
+    async findTicketById(ticketId) {
+        return await ticketDAO.findTicketById(ticketId);
+    };
+
+    async cancelTicket(ticketId) {
+        return await ticketDAO.cancelTicket(ticketId);
+    };
 };

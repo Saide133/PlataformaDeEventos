@@ -1,72 +1,76 @@
 import Event from '../models/Event.js';
 import '../models/Category.js';
 
-export const createEvent = async (eventData) => {
-    try {
-        const newEvent = await Event.create(eventData);
-        return newEvent;
-    } catch (error) {
-        console.error(error);
-        if (error.name === 'ValidationError' || error.name === 'CastError') {
-            const validationError = new Error(error.message);
-            validationError.statusCode = 400;
-            throw validationError;
-        };
+export class EventDAO {
 
-        throw new Error('Error al crear evento');
-    }
-};
+    async create(eventData) {
+        try {
+           const newEvent = await Event.create(eventData);
 
-export const findAll = async (filter, options) => {
-    try {
-        const { skip, limit, sort } = options;
-        const events = await Event.find(filter).populate('category').populate('organizer', 'first_name last_name').sort(sort).skip(skip).limit(limit);
+            return newEvent;
+        } catch (error) {
+            console.error(error);
+            if (error.name === 'ValidationError' || error.name === 'CastError') {
+                const validationError = new Error(error.message);
+                validationError.statusCode = 400;
+                throw validationError;
+            };
+            throw new Error('Error al crear evento');
+        }
+    };
 
-        return events;
-    } catch (error) {
-         console.error(error);
-        throw new Error('Error al obtener eventos');
-    }
-};
+    async findAll(filter, options) {
+        try {
+            const { skip, limit, sort } = options;
+            const events = await Event.find(filter).populate('category').populate('organizer', 'first_name last_name').sort(sort).skip(skip).limit(limit);
 
-export const findById = async (_id) => {
-    try {
-        const event = await Event.findById(_id);
-        return event;
-    } catch (error) {
-        console.error(error);
-        if (error.name === 'CastError') {
-            const invalidIdError = new Error('El id ingresado no es válido');
-            invalidIdError.statusCode = 400;
-            throw invalidIdError;
-        };
+            return events;
+        } catch (error) {
+            console.error(error);
+            throw new Error('Error al obtener eventos');
+        }
+    };
 
-        throw new Error('Error al obtener el evento');
-    }
-};
+    async findById(_id) {
+        try {
+            const event = await Event.findById(_id);
 
-export const updateEvent = async (_id, updateData) => {
-    try {
-        const updatedEvent = await Event.findByIdAndUpdate(_id, updateData, { new: true, runValidators: true });
-        return updatedEvent;
-    } catch (error) {
-        console.error(error);
-        if (error.name === 'ValidationError' || error.name === 'CastError') {
-            const validationError = new Error(error.message);
-            validationError.statusCode = 400;
-            throw validationError;
-        };
+            return event;
+        } catch (error) {
+            console.error(error);
+            if (error.name === 'CastError') {
+                const invalidIdError = new Error('El id ingresado no es válido');
+                invalidIdError.statusCode = 400;
+                throw invalidIdError;
+            };
+            throw new Error('Error al obtener el evento');
+        }
+    };
 
-        throw new Error('Error al actualizar evento');
-    }
-};
+    async update(_id, updateData) {
+        try {
+           const updatedEvent = await Event.findByIdAndUpdate(_id, updateData, { new: true, runValidators: true });
 
-export const countEvents = async (filter) => {
-    try {
-        const totalEvents = await Event.countDocuments(filter);
-        return totalEvents;
-    } catch (error) {
-        console.error(error);
-        throw new Error('Error al obtener eventos');
-    }
+           return updatedEvent;
+        } catch (error) {
+            console.error(error);
+            if (error.name === 'ValidationError' || error.name === 'CastError') {
+                const validationError = new Error(error.message);
+                validationError.statusCode = 400;
+                throw validationError;
+            };
+            throw new Error('Error al actualizar evento');
+        }
+    };
+
+    async count(filter) {
+        try {
+            const totalEvents = await Event.countDocuments(filter);
+
+            return totalEvents;
+        } catch (error) {
+            console.error(error);
+            throw new Error('Error al obtener eventos');
+        }
+    };
 };

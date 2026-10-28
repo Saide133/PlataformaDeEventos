@@ -1,10 +1,12 @@
-import { getEventById } from '../repositories/events.repository.js';
-import { createTicket, findActiveTicketByUserAndEvent, countReservedQuantityForEvent, findTicketById, cancelTicket } from '../repositories/tickets.repository.js';
+import { getEventByIdService } from './events.service.js';
+import { TicketRepository } from '../repositories/tickets.repository.js';
 import { generateReservationCode } from '../utils/ticketCode.js';
 import { sendTicketConfirmationEmail } from './mailer.service.js';
 
+const ticketRepository = new TicketRepository();
+
 export const createTicketService = async (userId, eventId, quantity, user) => {
-    const event = await getEventById(eventId);
+    const event = await getEventByIdService(eventId);
 
     if (!event) {
         const eventError = new Error('No se encontro el evento');
@@ -31,13 +33,13 @@ export const createTicketService = async (userId, eventId, quantity, user) => {
         throw quantityInvalid;
     };
 
-    if(await findActiveTicketByUserAndEvent(userId, eventId)) {
+    if(await ticketRepository.findActiveTicketByUserAndEvent(userId, eventId)) {
         const ticketExistente = new Error('El usuario ya posee un ticket para este evento');
         ticketExistente.statusCode = 409;
         throw ticketExistente;
     };
 
-    const totalReservado = await countReservedQuantityForEvent(event._id);
+    const totalReservado = await ticketRepository.countReservedQuantityForEvent(event._id);
     if((event.capacity - totalReservado) < quantity) {
         const capacityError = new Error('Excede los cupos disponibles');
         capacityError.statusCode = 400;
@@ -46,7 +48,7 @@ export const createTicketService = async (userId, eventId, quantity, user) => {
 
     const reservationCode = generateReservationCode();
 
-    const newTicket = await createTicket({
+    const newTicket = await ticketRepository.createTicket({
         user: userId,
         event: event._id,
         quantity,
@@ -64,7 +66,7 @@ export const createTicketService = async (userId, eventId, quantity, user) => {
 };
 
 export const cancelTicketService = async (ticketId, requestingUser) => {
-    const ticket = await findTicketById(ticketId);
+    const ticket = await ticketRepository.findTicketById(ticketId);
 
     if (!ticket){
         const ticketError = new Error('No se encontro el Ticket');
@@ -90,5 +92,13 @@ export const cancelTicketService = async (ticketId, requestingUser) => {
         throw eventExpired;
     };
 
-    return await cancelTicket(ticketId);
+    return await ticketRepository.cancelTicket(ticketId);
+};
+
+export const getMyTicketsService = async (userId) => {
+    return await ticketRepository.findTicketsByUser(userId);
+};
+
+export const getEventTicketsService = async (eventId) => {
+    return await ticketRepository.findTicketsByEvent(eventId);
 };
