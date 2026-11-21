@@ -103,14 +103,10 @@ export const updateEventStatusService = async (event, newStatus) => {
     return await eventRepository.updateEvent(event._id, { status: newStatus });
 };
 
-export const getEventsService = async (filter, options) => {
-    return eventRepository.getAllEvents(filter, options);    
+export const getEventsService = async (queryParams) => {
+    return await eventRepository.getAllEvents(queryParams);
 };
 
 export const getEventByIdService = async (_id) => {
     return eventRepository.getEventById(_id);
-};
-
-export const countEventsService = async (filter) => {
-    return eventRepository.countEvents(filter);
 };

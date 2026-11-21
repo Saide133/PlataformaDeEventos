@@ -8,8 +8,8 @@ export class EventRepository {
         return await eventDAO.create(eventData);
     };
 
-    async getAllEvents(filter, options) {
-        return await eventDAO.findAll(filter, options);        
+    async getAllEvents(queryParams) {
+        return await eventDAO.findAll(queryParams);
     };
 
     async getEventById(_id) {

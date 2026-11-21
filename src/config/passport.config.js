@@ -3,6 +3,8 @@ import { Strategy as LocalStrategy } from 'passport-local';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import { registerService, loginService } from '../services/sessions.service.js';
 import { UserRepository } from '../repositories/users.repository.js';
+import { RegisterInputDTO } from '../dto/register-input.dto.js';
+import { LoginInputDTO } from '../dto/login-input.dto.js';
 
 const userRepository = new UserRepository();
 
@@ -13,12 +15,14 @@ passport.use(
         { usernameField: 'email',passReqToCallback: true },
         async (req, email, password, done) => {
             try{
-                const newUser = await registerService({
+                    const registerData = new RegisterInputDTO({
                     first_name: req.body.first_name,
                     last_name: req.body.last_name,
                     email,
                     password
                 });
+
+                const newUser = await registerService(registerData);
 
                 return done(null, newUser);
 
@@ -35,7 +39,8 @@ passport.use(
         { usernameField: 'email' },
         async (email, password, done) => {
             try{
-                const logedUser = await loginService({ email, password });
+                const loginData = new LoginInputDTO({ email, password });
+                const logedUser = await loginService(loginData);
                 
                 return done(null, logedUser);
 

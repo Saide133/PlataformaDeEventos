@@ -1,22 +1,23 @@
 import { createTicketService, cancelTicketService, getMyTicketsService, getEventTicketsService } from '../services/tickets.service.js';
 import { TicketResponseDTO } from '../dto/ticket-response.dto.js';
+import { CreateTicketInputDTO } from '../dto/create-ticket-input.dto.js';
 
-export const createTicket = async (req, res) => {
+export const createTicket = async (req, res, next) => {
     try {
         const user = req.user;
         const eventId = req.params.eid;
-        const { quantity } = req.body;
+        const { quantity } = new CreateTicketInputDTO(req.body);
 
         const newTicket = await createTicketService(user._id, eventId, quantity, user);
         const ticketDTO = new TicketResponseDTO(newTicket);
 
         res.status(201).json({ status: 'success', payload: ticketDTO });
     } catch (error) {
-        res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al crear el ticket' });
+        next(error);
     }
 };
 
-export const getMyTickets = async (req, res) => {
+export const getMyTickets = async (req, res, next) => {
     try {
         const user = req.user;
 
@@ -25,11 +26,11 @@ export const getMyTickets = async (req, res) => {
 
         res.status(200).json({ status: 'success', payload: ticketsDTO });
     } catch (error) {
-        res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al obtener tickets' });
+        next(error);
     }
 };
 
-export const getEventTickets = async (req, res) => {
+export const getEventTickets = async (req, res, next) => {
     try {
         const eventId = req.params.eid;
 
@@ -38,11 +39,11 @@ export const getEventTickets = async (req, res) => {
 
         res.status(200).json({ status: 'success', payload: ticketsDTO });
     } catch (error) {
-        res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al obtener tickets del evento' });
+        next(error);
     }
 };
 
-export const cancelTicket = async (req, res) => {
+export const cancelTicket = async (req, res, next) => {
     try {
         const ticketId = req.params.tid;
         const user = req.user;
@@ -52,6 +53,6 @@ export const cancelTicket = async (req, res) => {
 
         res.status(200).json({ status: 'success', payload: ticketDTO });
     } catch (error) {
-        res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al cancelar el ticket' });
+        next(error);
     }
 };

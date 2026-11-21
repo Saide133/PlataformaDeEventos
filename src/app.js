@@ -6,6 +6,7 @@ import ticketsRoutes from './routes/tickets.router.js';
 import passport from 'passport';
 import cookieParser from 'cookie-parser';
 import './config/passport.config.js';
+import { errorHandler, notFoundHandler } from './middlewares/errorHandler.middleware.js';
 
 const app = express();
 
@@ -21,5 +22,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/sessions', sessionsRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/tickets', ticketsRoutes);
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 export default app;

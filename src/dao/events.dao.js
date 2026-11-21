@@ -19,12 +19,49 @@ export class EventDAO {
         }
     };
 
-    async findAll(filter, options) {
+    async findAll(queryParams) {
         try {
-            const { skip, limit, sort } = options;
-            const events = await Event.find(filter).populate('category').populate('organizer', 'first_name last_name').sort(sort).skip(skip).limit(limit);
+            const { category, status, location, dateFrom, dateTo, search, page = 1, limit = 10, sort = 'date' } = queryParams;
 
-            return events;
+            const filter = {};
+
+            if (category) filter.category = category;
+            if (status) filter.status = status;
+            if (location) filter.location = { $regex: location, $options: 'i' };
+
+            if (dateFrom || dateTo) {
+                filter.date = {};
+                if (dateFrom) filter.date.$gte = new Date(dateFrom);
+                if (dateTo) filter.date.$lte = new Date(dateTo);
+            }
+
+            if (search) {
+                filter.$or = [
+                    { title: { $regex: search, $options: 'i' } },
+                    { description: { $regex: search, $options: 'i' } }
+                ];
+            }
+
+            const pageNumber = Number(page);
+            const limitNumber = Number(limit);
+            const skip = (pageNumber - 1) * limitNumber;
+
+            const events = await Event.find(filter)
+                .populate('category')
+                .populate('organizer', 'first_name last_name')
+                .sort(sort)
+                .skip(skip)
+                .limit(limitNumber);
+
+            const total = await Event.countDocuments(filter);
+
+            return {
+                events,
+                page: pageNumber,
+                limit: limitNumber,
+                total,
+                totalPages: Math.ceil(total / limitNumber)
+            };
         } catch (error) {
             console.error(error);
             throw new Error('Error al obtener eventos');

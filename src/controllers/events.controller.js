@@ -1,106 +1,31 @@
-import { createEventService, updateEventService, updateEventStatusService, getEventsService, getEventByIdService, countEventsService } from '../services/events.service.js';
+import { createEventService, updateEventService, updateEventStatusService, getEventsService, getEventByIdService } from '../services/events.service.js';
 import { EventResponseDTO } from '../dto/event-response.dto.js';
+import { EventInputDTO } from '../dto/event-input.dto.js';
 
-export const getEvents = async (req, res) => {
+export const getEvents = async (req, res, next) => {
     try {
-        const {
-            category,
-            status,
-            location,
-            dateFrom,
-            dateTo,
-            search,
-            page = 1,
-            limit = 10,
-            sort = 'date'
-        } = req.query;
+        const result = await getEventsService(req.query);
+        const eventsDTO = result.events.map(event => new EventResponseDTO(event));
 
-        const filter = {};
-
-        if (category) {
-            filter.category = category;
-        };
-
-        if (status) {
-            filter.status = status;
-        };
-
-        if (location) {
-            filter.location = {
-                $regex: location,
-                $options: 'i'
-            };
-        };
-
-        if (dateFrom || dateTo) {
-            filter.date = {};
-
-            if (dateFrom) {
-                filter.date.$gte = new Date(dateFrom)
-            };
-
-            if (dateTo) {
-                filter.date.$lte = new Date(dateTo)
-            };
-        };
-
-        if (search) {
-            filter.$or = [
-                {
-                    title: {
-                        $regex: search,
-                        $options: 'i'
-                    }
-                },
-                {  
-                    description: {
-                        $regex: search,
-                        $options: 'i'
-                    }
-                }
-            ]
-        };
-
-        const pageNumber = Number(page);
-        const limitNumber = Number(limit);
-        const skip = (pageNumber - 1) * limitNumber;
-
-        const options = { skip, limit: limitNumber, sort};
-
-        const events = await getEventsService(filter, options);
-        const eventsDTO = events.map(event => new EventResponseDTO(event));
-
-        const totalEvents = await countEventsService(filter);
-
-        res.json({ 
-            status: 'success', 
-            payload: eventsDTO,
-            pagination: {
-                total: totalEvents,
-                page: pageNumber,
-                limit: limitNumber,
-                totalPages: Math.ceil(totalEvents / limitNumber)
-            }
-         });
-        
+        res.json({
+            status: 'success',
+            data: eventsDTO,
+            page: result.page,
+            limit: result.limit,
+            total: result.total,
+            totalPages: result.totalPages
+        });
     } catch (error) {
-        res.status(500).json({ status: 'error', message: 'Error al obtener eventos' });
+        next(error);
     }
 };
 
-export const createEvent = async (req, res) => {
+export const createEvent = async (req, res, next) => {
     try {
-        const { title, description, category, date, location, capacity, price, status } = req.body;
+        const eventInput = new EventInputDTO(req.body);
 
         const eventData = {
-            title,
-            description,
-            category,
-            date,
-            location,
-            capacity,
-            price,
-            status,
+            ...eventInput,
             organizer: req.user._id
         };
 
@@ -109,41 +34,42 @@ export const createEvent = async (req, res) => {
 
         res.status(201).json({ status: 'success', payload: eventDTO });
     } catch (error) {
-        res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al crear evento' });
+        next(error);
     }
 };
 
-export const updateEvent = async (req, res) => {
+export const updateEvent = async (req, res, next) => {
     try {
-        const updateData = req.body;
+        const updateData = new EventInputDTO(req.body);
         const updatedEvent = await updateEventService(req.event, updateData);
         const eventDTO = new EventResponseDTO(updatedEvent);
 
-        res.json({ status: 'success', payload: eventDTO});
+        res.json({ status: 'success', payload: eventDTO });
     } catch (error) {
-        res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al actualizar evento'});
+        next(error);
     }
 };
 
-export const getEventById = async(req, res) =>{
+export const getEventById = async (req, res, next) => {
     try {
         const { id } = req.params;
         const event = await getEventByIdService(id);
 
         if (!event) {
-            return res.status(404).json({ status: 'error', message: 'No se encontró el evento'});   
+            const notFoundError = new Error('No se encontró el evento');
+            notFoundError.statusCode = 404;
+            throw notFoundError;
         };
 
         const eventDTO = new EventResponseDTO(event);
 
         res.json({ status: 'success', payload: eventDTO });
-    } catch (error){
-        res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al obtener el evento'});
+    } catch (error) {
+        next(error);
     }
-
 };
 
-export const updateEventStatus = async (req, res) => {
+export const updateEventStatus = async (req, res, next) => {
     try {
         const { status } = req.body;
         const updatedEvent = await updateEventStatusService(req.event, status);
@@ -151,6 +77,6 @@ export const updateEventStatus = async (req, res) => {
 
         res.json({ status: 'success', payload: eventDTO });
     } catch (error) {
-        res.status(error.statusCode || 500).json({ status: 'error', message: error.message || 'Error al actualizar el estado del evento' });
+        next(error);
     }
 };
