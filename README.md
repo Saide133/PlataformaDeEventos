@@ -2,7 +2,7 @@
 
 API REST para la gestión de eventos e inscripciones/tickets, desarrollada como proyecto final del curso Backend II de Coderhouse. Permite administrar usuarios, eventos e inscripciones/tickets, con autenticación por JWT y roles diferenciados (admin, organizador y usuario).
 
-Este repositorio refleja el estado del proyecto hasta Pre-entrega 8: arquitectura profesional en capas (router → controller → service → repository → DAO → modelo, con DTO controlando las respuestas), autenticación con Passport + JWT en cookie httpOnly, autorización por rol y por propiedad del recurso, la entidad Event con su CRUD y reglas de negocio completas, y la entidad Ticket con el flujo completo de inscripción y cancelación, incluyendo envío de email de confirmación. El comportamiento externo de la API (rutas, códigos de respuesta, reglas de negocio) es el mismo que en Pre-entrega 7 — este módulo fue una refactorización interna, no un cambio funcional.
+Este repositorio refleja el estado del proyecto en la entrega final (Módulo 9): arquitectura profesional en capas (router → controller → service → repository → DAO → modelo, con DTO controlando tanto las respuestas como los datos de entrada), autenticación con Passport + JWT en cookie httpOnly, autorización por rol y por propiedad del recurso, la entidad Event con su CRUD y reglas de negocio completas, la entidad Ticket con el flujo completo de inscripción y cancelación (incluyendo envío de email de confirmación), manejo centralizado de errores a través de un middleware de Express, y construcción de filtros de MongoDB desacoplada del controller (vive en el DAO). Respecto a Pre-entrega 8, esta entrega agrega: DTOs de entrada que normalizan y filtran el `req.body` antes de llegar a los services, el middleware de error centralizado, y el armado de los filtros de búsqueda de eventos dentro del `EventDAO` en lugar del controller.
 
 ## Tecnologías
 
@@ -120,6 +120,26 @@ Cada entidad expuesta en la API tiene una clase DTO en `src/dto/`, que define ex
 
 Para listas, se aplica el DTO a cada elemento con `.map()` (por ejemplo `users.map(user => new CurrentUserDTO(user))`).
 
+### DTO de entrada (Input DTO)
+
+Además de los DTO de salida (los de arriba, que controlan qué viaja en la respuesta), el proyecto usa **DTO de entrada**: clases que reciben el `req.body` crudo, descartan cualquier campo que no corresponda, y normalizan los valores básicos (recortar espacios, pasar el email a minúsculas) antes de que esos datos lleguen al service o a la estrategia de Passport. No validan reglas de negocio — eso sigue siendo responsabilidad exclusiva del service.
+
+- **`RegisterInputDTO`** / **`LoginInputDTO`**: usados dentro de las estrategias `register`/`login` de Passport (`passport.config.js`), antes de llamar a `registerService`/`loginService`.
+- **`CreateUserInputDTO`**: usado en `createUser` (`users.controller.js`), antes de llamar a `createUserByAdminService`.
+- **`EventInputDTO`**: usado en `createEvent` y `updateEvent` (`events.controller.js`), antes de llamar a `createEventService`/`updateEventService`.
+- **`CreateTicketInputDTO`**: usado en `createTicket` (`tickets.controller.js`), antes de llamar a `createTicketService`.
+
+### Manejo centralizado de errores
+
+Todos los controllers delegan los errores a Express con `next(error)` en lugar de responder directamente desde cada `catch`. El manejo real de la respuesta de error vive en un único lugar: `src/middlewares/errorHandler.middleware.js`, registrado al final de `app.js` (después de montar todas las rutas):
+
+```javascript
+app.use(notFoundHandler); // 404 para rutas que no existen
+app.use(errorHandler);    // toma cualquier error con next(error) y responde { status: 'error', message }
+```
+
+`errorHandler` lee `err.statusCode` (seteado al crear el `Error` en el service o en el controller, como en los `throw` con `.statusCode = 400/404/409`) y responde con ese código, o `500` si no fue seteado. Así, cada capa solo necesita `throw` un error con el código correspondiente, sin preocuparse por cómo se construye la respuesta HTTP.
+
 ## Modelo de roles y matriz de permisos
 
 El campo `role` del modelo `User` acepta tres valores: `user` (default), `organizer` y `admin`. Un usuario nunca puede autoasignarse un rol distinto de `user` desde el registro público — solo un `admin` puede crear usuarios con otro rol, a través de `POST /api/users`.
@@ -185,7 +205,7 @@ Al cancelar, el cupo que ocupaba esa inscripción queda liberado automáticament
 | POST | `/api/sessions/logout` | Público | Limpia la cookie de sesión |
 | GET | `/api/users` | Admin | Lista todos los usuarios |
 | POST | `/api/users` | Admin | Crea un usuario, con el rol que indique el admin |
-| GET | `/api/events` | Público | Lista eventos con filtros (`category`, `status`, `location`, `dateFrom`, `dateTo`, `search`) y paginación (`page`, `limit`, `sort`) |
+| GET | `/api/events` | Público | Lista eventos con filtros (`category`, `status`, `location`, `dateFrom`, `dateTo`, `search`) y paginación (`page`, `limit`, `sort`). Responde `{ status, data, page, limit, total, totalPages }` |
 | GET | `/api/events/:id` | Público | Devuelve un evento puntual |
 | POST | `/api/events` | Organizer / Admin | Crea un evento |
 | PUT | `/api/events/:id` | Organizer (dueño) / Admin | Edita un evento (no permite cambiar `status` ni modificar un evento `cancelled`/`finished`) |
@@ -194,6 +214,15 @@ Al cancelar, el cupo que ocupaba esa inscripción queda liberado automáticament
 | GET | `/api/events/:eid/tickets` | Organizer (dueño del evento) / Admin | Lista las inscripciones del evento `:eid` |
 | GET | `/api/tickets/my-tickets` | Autenticado | Lista las inscripciones del usuario logueado |
 | PATCH | `/api/tickets/:tid/cancel` | Dueño de la inscripción / Admin | Cancela la inscripción `:tid` |
+
+## Usuarios de prueba
+
+No hay un seed automático: los usuarios de prueba se crean a mano siguiendo estos pasos (ver también el punto 2 de la sección siguiente):
+
+1. Registrar usuarios normales vía `POST /api/sessions/register` (quedan con rol `user`).
+2. Para tener un `admin`, registrar un usuario y luego cambiarle el campo `role` a `"admin"` directamente en MongoDB Atlas (no existe otra forma, a propósito: nadie puede autoasignarse ese rol desde la API).
+3. Con ese admin logueado, crear usuarios `organizer` vía `POST /api/users` (body: `first_name`, `last_name`, `email`, `password`, `role: "organizer"`).
+4. Para evaluar el proyecto rápidamente sin crear usuarios desde cero, cualquier usuario `user` puede probarse creando uno nuevo por registro; para probar las rutas de `organizer`/`admin` es necesario repetir los pasos 2 y 3.
 
 ## Cómo probar los distintos accesos (Postman / Thunder Client)
 
@@ -215,6 +244,6 @@ Al cancelar, el cupo que ocupaba esa inscripción queda liberado automáticament
 
 ## Estado del proyecto
 
-Completado: arquitectura profesional en capas (DAO, Repository, Service, Controller, DTO) para las entidades User, Event y Ticket; autenticación JWT + Passport con lógica de negocio desacoplada en services; roles y permisos; CRUD de eventos con reglas de negocio (fechas, capacidad, precio, estados); protección de rutas sensibles; módulo completo de inscripciones/tickets (creación, cancelación, control de cupo, envío de email de confirmación); DTOs que garantizan que ninguna respuesta exponga `password` ni campos internos, incluso en datos poblados.
+Completado: arquitectura profesional en capas (DAO, Repository, Service, Controller, DTO) para las entidades User, Event y Ticket; autenticación JWT + Passport con lógica de negocio desacoplada en services; roles y permisos; CRUD de eventos con reglas de negocio (fechas, capacidad, precio, estados); protección de rutas sensibles; módulo completo de inscripciones/tickets (creación, cancelación, control de cupo, envío de email de confirmación); DTOs de salida que garantizan que ninguna respuesta exponga `password` ni campos internos, incluso en datos poblados; DTOs de entrada que normalizan y filtran el body antes de llegar a los services; manejo centralizado de errores vía middleware de Express; construcción de filtros de búsqueda de eventos desacoplada del controller (vive en `EventDAO`).
 
-Pendiente: entrega final capstone (Módulo 9).
+Entrega final (Módulo 9) completa.
